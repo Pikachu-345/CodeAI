@@ -1,7 +1,11 @@
 import { MessagesContext } from "@/context/MessagesContext";
-import { ArrowRight, Link } from "lucide-react";
+import { ArrowRight, Link, User } from "lucide-react";
 import React from "react";
 import SignInDialog from "./SignInDialog";
+import { UserDetailsContext } from "@/context/UserDetailsContext";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useRouter } from "next/navigation";
 
 const SUGGESTIONS = [
     "Create a simple todo app.",
@@ -12,18 +16,24 @@ const SUGGESTIONS = [
 ];
 
 function Hero() {
+    const [openDialog, setOpenDialog] = React.useState(false);
     const [userInput, setUserInput] = React.useState("");
     const {messages, setMessages} = React.useContext(MessagesContext);
-    const {userDetails, setUserDetails} = React.useContext(MessagesContext);
-    const [openDialog, setOpenDialog] = React.useState(false);
+    const {userDetails, setUserDetails} = React.useContext(UserDetailsContext);
+    const CreateWorkspace = useMutation(api.workspace.CreateWorkspace);
+    const router = useRouter();
 
-    const onSubmit = (input:string) => {
+    const onSubmit = async (input:string) => {
         if(!userDetails){
             setOpenDialog(true);
             return;
         }
         setMessages([...messages, { role: "user", content: input }]);
-        setUserInput("");
+        const workspaceId = await CreateWorkspace({
+            user: userDetails._id,
+            messages: [{ role: "user", content: input }],
+        });
+        router.push(`/workspace/${workspaceId}`);
     };
 
     return (
