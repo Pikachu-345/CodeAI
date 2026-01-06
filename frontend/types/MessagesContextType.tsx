@@ -1,6 +1,13 @@
+import { Dispatch } from "react";
+
+export interface Messages {
+    role: string; 
+    content: string; 
+}
+
 export interface MessagesContextType {
-  messages: Array<{ role: string; content: string }>;
-  setMessages: (newMessages: Array<{ role: string; content: string }>) => void;
+  messages: Array<Messages>;
+  setMessages: Dispatch<React.SetStateAction<Array<Messages>>>;
 }
 
 export const initialMessagesContext: MessagesContextType = {

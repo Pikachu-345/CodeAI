@@ -10,7 +10,7 @@ import { Button } from "../ui/button";
 import { useGoogleLogin } from "@react-oauth/google";
 import axios from "axios";
 import { UserDetailsContext } from "@/context/UserDetailsContext";
-import React from "react";
+import React, { useContext } from "react";
 import { useMutation } from "convex/react";
 import { v4 as uuidv4 } from 'uuid';
 import { api } from "@/convex/_generated/api";
@@ -21,7 +21,7 @@ interface SignInDialogProps {
 }
 
 const SignInDialog = ( {openDialog, closeDialog}:SignInDialogProps ) => {
-    const {userDetails, setUserDetails} = React.useContext(UserDetailsContext);
+    const {userDetails, setUserDetails} = useContext(UserDetailsContext);
     const CreateUser = useMutation(api.users.CreateUser);
     
     const googleLogin = useGoogleLogin({

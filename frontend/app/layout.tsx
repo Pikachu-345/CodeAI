@@ -30,9 +30,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ConvexClientProvider>
-        <Provider>
-          {children}
-        </Provider>
+          <Provider>
+            {children}
+          </Provider>
         </ConvexClientProvider>
       </body>
     </html>
