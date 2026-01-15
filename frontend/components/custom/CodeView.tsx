@@ -7,9 +7,12 @@ import {
 } from "@codesandbox/sandpack-react";
 import { useState } from "react";
 import { Code2, Eye } from "lucide-react";
+import Dependancies from "@/constants/Dependancies"; 
+import { BASE_SandboxFiles } from "@/constants/BaseFile";
 
 export function CodeView() {
     const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
+    const [files, setFiles] = useState(BASE_SandboxFiles);
 
     return (
         <div className="h-full flex flex-col bg-[#151515] border rounded-xl overflow-hidden shadow-2xl">
@@ -44,11 +47,15 @@ export function CodeView() {
 
             <div className="flex-1 h-screen">
                 <SandpackProvider
+                    files={files}
                     template="react"
                     theme="dark"
                     options={{
                         externalResources: ["https://cdn.tailwindcss.com"],
                     }}
+                    // customSetup={{ 
+                    //     dependencies: {...Dependancies.DEPENDENCIES}
+                    // }}
                 >
                     <SandpackLayout
                         style={{
