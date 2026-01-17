@@ -5,7 +5,7 @@ import { UserDetailsContext } from "@/context/UserDetailsContext";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Messages } from "@/types/MessagesContextType";
-import axios from "axios";
+// import axios from "axios";
 import { useConvex, useMutation } from "convex/react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
@@ -13,6 +13,8 @@ import { useContext, useEffect, useState } from "react";
 import { ArrowUpIcon, Plus } from "lucide-react";
 import { InputGroupButton, InputGroupTextarea } from "@/components/ui/input-group";
 import { Separator } from "@/components/ui/separator";
+import { parseResponse } from "@/lib/parser";
+import { FilesContext } from "@/context/FilesContext";
 
 export function ChatView() {
     const {workspaceId} = useParams();
@@ -20,6 +22,7 @@ export function ChatView() {
     const {messages,setMessages}=useContext(MessagesContext);
     const UpdateMessage = useMutation(api.workspace.UpdateWorkspaceById);
     const {userDetails, setUserDetails}=useContext(UserDetailsContext);
+    const {files,setFiles} = useContext(FilesContext);
     const [userPrompt, setUserPrompt] = useState<string>("");
     const [loading,setLoading] = useState<boolean>(false);
 
@@ -32,11 +35,77 @@ export function ChatView() {
     }
 
     const getAiResponse = async () => {
-        const res = await axios.post("/api/chat",{messages:messages});
-        // console.log(res.data);
-        const assitantResponse =  res.data.result;
-        setMessages((oldMessages: Array<Messages>) => [...oldMessages, assitantResponse]);
-        await UpdateMessage({messages:[...messages,assitantResponse],workspaceId:workspaceId as Id<"workspace">});
+        setLoading(true);
+        try {
+            let currentFiles = { ...files };
+            const response = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ messages: messages }),
+            });
+
+            if (!response.body) return;
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let accumulatedResponse = "";
+
+            setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                const chunkValue = decoder.decode(value, { stream: true });
+                accumulatedResponse += chunkValue;
+
+                const { text, steps } = parseResponse(accumulatedResponse);
+
+                setMessages((prev) => {
+                    const newMsgs = [...prev];
+                    const lastMsg = newMsgs[newMsgs.length - 1];
+                    if (lastMsg && lastMsg.role === "assistant") {
+                        newMsgs[newMsgs.length - 1] = {
+                            ...lastMsg,
+                            content: text
+                        };
+                        return newMsgs;
+                    }
+                    return [...prev, { role: "assistant", content: text }];
+                });
+
+                // 4. Update Sandbox Files
+                if (steps.length > 0) {
+                    steps.forEach((step) => {
+                        currentFiles[step.filePath] = {
+                            code: step.content,
+                            active: true
+                        };
+                    });
+                    setFiles((prevFiles) => {
+                        const newFiles = { ...prevFiles };
+                        steps.forEach((step) => {
+                            newFiles[step.filePath] = { 
+                                code: step.content, 
+                                active: true 
+                            };
+                        });
+                        return newFiles;
+                    });
+                }
+            }
+
+            await UpdateMessage({
+                messages: [...messages, { role: "assistant", content: accumulatedResponse }],
+                workspaceId: workspaceId as Id<"workspace">,
+                files: currentFiles
+            });
+
+        } catch (error) {
+            console.error("AI Generation Error:", error);
+        } finally {
+            setLoading(false);
+        }
     }
 
     const callAi = () => {
@@ -55,15 +124,16 @@ export function ChatView() {
             getMessages();
         }
     },[workspaceId]);
+
     useEffect(() => {
         if (messages && messages.length>0) {
             const lastMessage = messages[messages.length - 1];
-            if (lastMessage.role === 'user') {
+            if (lastMessage.role === 'user' && !loading) {
                 getAiResponse();
                 setLoading(false);
             }
         }
-    }, [messages]);
+    }, [messages, loading]);
 
     return (
         <div className="flex flex-col h-full bg-background border rounded-xl shadow-sm">

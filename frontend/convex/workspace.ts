@@ -31,10 +31,12 @@ export const UpdateWorkspaceById = mutation({
     args: {
         workspaceId: v.id("workspace"),
         messages: v.any(),
+        files: v.optional(v.any())
     },
     handler: async (ctx, args) => {
         const result = ctx.db.patch(args.workspaceId,{
-            messages: args.messages
+            messages: args.messages,
+            ...(args.files && { fileData: args.files })
         });
         return result;
     }

@@ -5,14 +5,15 @@ import {
     SandpackPreview,
     SandpackFileExplorer,
 } from "@codesandbox/sandpack-react";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Code2, Eye } from "lucide-react";
-import Dependancies from "@/constants/Dependancies"; 
-import { BASE_SandboxFiles } from "@/constants/BaseFile";
+// import Dependancies from "@/constants/Dependancies"; 
+// import { BASE_SandboxFiles } from "@/constants/BaseFile";
+import { FilesContext } from "@/context/FilesContext";
 
 export function CodeView() {
     const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
-    const [files, setFiles] = useState(BASE_SandboxFiles);
+    const {files, setFiles} = useContext(FilesContext);
 
     return (
         <div className="h-full flex flex-col bg-[#151515] border rounded-xl overflow-hidden shadow-2xl">
@@ -81,7 +82,7 @@ export function CodeView() {
                         ) : (
                             <div className="w-full bg-white ">
                                 <SandpackPreview
-                                    className="h-full"
+                                    className="h-150"
                                     showOpenInCodeSandbox={false}
                                     showRefreshButton={true}
                                 />
